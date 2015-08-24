@@ -6,6 +6,7 @@ import (
 	"io"
 	"strconv"
 	"strings"
+	"time"
 	"unicode"
 )
 
@@ -38,38 +39,45 @@ func (d Directive) String() string {
 
 // A single TAP-Testline
 type Testline struct {
-	Ok          bool      // Whether the Testpoint executed ok
-	Num         int       // The number of the test
-	Description string    // A short description
-	Directive   Directive // Whether the test was skipped or is a todo
-	Explanation string    // A short explanation why the test was skipped/is a todo
-	Diagnostic  string    // A more detailed diagnostic message about the failed test
-	Yaml        []byte    // The inline Yaml-document, if given
+	Ok          bool          // Whether the Testpoint executed ok
+	Num         int           // The number of the test
+	Description string        // A short description
+	Directive   Directive     // Whether the test was skipped or is a todo
+	Explanation string        // A short explanation why the test was skipped/is a todo
+	Diagnostic  string        // A more detailed diagnostic message about the failed test
+	Time        time.Duration // Time it took to test
+	Yaml        []byte        // The inline Yaml-document, if given
 }
 
 // The outcome of a Testsuite
 type Testsuite struct {
-	Ok      bool        // Whether the Testsuite as a whole succeded
-	Tests   []*Testline // Description of all Testlines
-	plan    int         // Number of tests intended to run
-	version int
+	Ok      bool          // Whether the Testsuite as a whole succeded
+	Tests   []*Testline   // Description of all Testlines
+	plan    int           // Number of tests intended to run
+	version int           // version number of TAP
+	Time    time.Duration // Time it took to test
 }
 
 // Parses TAP
 type Parser struct {
-	scanner *bufio.Scanner
-	lastNum int
-	suite   Testsuite
+	scanner      *bufio.Scanner
+	lastNum      int
+	suite        Testsuite
+	startAt      time.Time
+	lastExecTime time.Time
 }
 
 func NewParser(r io.Reader) (*Parser, error) {
+	now := time.Now()
 	scanner := bufio.NewScanner(r)
 	if !scanner.Scan() {
 		return nil, io.EOF
 	}
 	return &Parser{
-		scanner: scanner,
-		lastNum: 0,
+		scanner:      scanner,
+		lastNum:      0,
+		startAt:      now,
+		lastExecTime: now,
 		suite: Testsuite{
 			Ok:      true,
 			Tests:   []*Testline{},
@@ -150,6 +158,8 @@ func (p *Parser) Suite() (*Testsuite, error) {
 			return nil, err
 		}
 	}
+
+	p.suite.Time = p.lastExecTime.Sub(p.startAt)
 	for _, t := range p.suite.Tests {
 		if !t.Ok {
 			p.suite.Ok = false
@@ -165,6 +175,11 @@ func (p *Parser) Suite() (*Testsuite, error) {
 }
 
 func (p *Parser) parseTestLine(ok bool, line string) *Testline {
+	// calculate time it took to test
+	now := time.Now()
+	duration := now.Sub(p.lastExecTime)
+	p.lastExecTime = now
+
 	index := 0
 
 	// parse test number
@@ -222,6 +237,7 @@ func (p *Parser) parseTestLine(ok bool, line string) *Testline {
 		Directive:   directive,
 		Explanation: explanation,
 		Diagnostic:  strings.Join(diagnostics, ""),
+		Time:        duration,
 	}
 }
 
