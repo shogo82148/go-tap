@@ -222,8 +222,12 @@ func (p *Parser) parseTestLine(ok bool, line string) *Testline {
 
 	// parse diagnostics
 	diagnostics := []string{}
+	var yaml []byte
 	for p.scanner.Scan() {
 		text := p.scanner.Text()
+		if p.suite.version == 13 && strings.TrimSpace(text) == "---" {
+			yaml = p.parseYAML()
+		}
 		if len(text) == 1 || text[0] != '#' {
 			break
 		}
@@ -238,7 +242,21 @@ func (p *Parser) parseTestLine(ok bool, line string) *Testline {
 		Explanation: explanation,
 		Diagnostic:  strings.Join(diagnostics, ""),
 		Time:        duration,
+		Yaml:        yaml,
 	}
+}
+
+func (p *Parser) parseYAML() []byte {
+	yaml := []string{}
+	for p.scanner.Scan() {
+		text := p.scanner.Text()
+		if strings.TrimSpace(text) == "..." {
+			p.scanner.Scan()
+			break
+		}
+		yaml = append(yaml, text, "\n")
+	}
+	return []byte(strings.Join(yaml, ""))
 }
 
 func (t *Testline) String() string {
