@@ -89,6 +89,7 @@ func NewParser(r io.Reader) (*Parser, error) {
 
 func (p *Parser) Next() (*Testline, error) {
 	t := &Testline{}
+	var err error
 
 	for {
 		line := p.scanner.Text()
@@ -129,11 +130,11 @@ func (p *Parser) Next() (*Testline, error) {
 
 		// test
 		if strings.HasPrefix(line, "ok ") {
-			t = p.parseTestLine(true, line[len("ok "):])
+			t, err = p.parseTestLine(true, line[len("ok "):])
 			break
 		}
 		if strings.HasPrefix(line, "not ok ") {
-			t = p.parseTestLine(false, line[len("not ok "):])
+			t, err = p.parseTestLine(false, line[len("not ok "):])
 			break
 		}
 
@@ -145,7 +146,7 @@ func (p *Parser) Next() (*Testline, error) {
 	}
 
 	p.suite.Tests = append(p.suite.Tests, t)
-	return t, nil
+	return t, err
 }
 
 func (p *Parser) Suite() (*Testsuite, error) {
@@ -174,7 +175,7 @@ func (p *Parser) Suite() (*Testsuite, error) {
 	return &p.suite, nil
 }
 
-func (p *Parser) parseTestLine(ok bool, line string) *Testline {
+func (p *Parser) parseTestLine(ok bool, line string) (*Testline, error) {
 	// calculate time it took to test
 	now := time.Now()
 	duration := now.Sub(p.lastExecTime)
@@ -223,7 +224,20 @@ func (p *Parser) parseTestLine(ok bool, line string) *Testline {
 	// parse diagnostics
 	diagnostics := []string{}
 	var yaml []byte
-	for p.scanner.Scan() {
+	for {
+		if !p.scanner.Scan() {
+			return &Testline{
+				Ok:          ok,
+				Num:         num,
+				Description: description,
+				Directive:   directive,
+				Explanation: explanation,
+				Diagnostic:  strings.Join(diagnostics, ""),
+				Time:        duration,
+				Yaml:        yaml,
+			}, io.EOF
+		}
+
 		text := p.scanner.Text()
 		if p.suite.version == 13 && strings.TrimSpace(text) == "---" {
 			yaml = p.parseYAML()
@@ -243,7 +257,7 @@ func (p *Parser) parseTestLine(ok bool, line string) *Testline {
 		Diagnostic:  strings.Join(diagnostics, ""),
 		Time:        duration,
 		Yaml:        yaml,
-	}
+	}, nil
 }
 
 func (p *Parser) parseYAML() []byte {
