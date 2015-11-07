@@ -87,23 +87,21 @@ ok 3 - foobar
 	if suite.Tests[0].SubTests != nil {
 		t.Errorf("want no subtests\ngot %v", suite.Tests[0].SubTests)
 	}
-	if len(suite.Tests[0].SubTests) == 3 {
+	if len(suite.Tests[1].SubTests) != 3 {
 		t.Errorf("want 3\ngot %d", len(suite.Tests[0].SubTests))
 	}
-	if got, want := suite.Tests[0].SubTests[0].String(), "ok 1 - subtest1"; got != want {
+	if got, want := suite.Tests[1].SubTests[0].String(), "ok 1 - subtest1"; got != want {
 		t.Errorf("want %s\ngot %s", want, got)
 	}
-	if got, want := suite.Tests[0].SubTests[1].String(), "ok 1 - subtest1"; got != want {
+	if got, want := suite.Tests[1].SubTests[1].String(), "ok 2 - subtest2 # TODO not implemented yet"; got != want {
 		t.Errorf("want %s\ngot %s", want, got)
 	}
-	if got, want := suite.Tests[0].SubTests[2].String(), "ok 3 - subtest3"; s1 == s2 {
+	if got, want := suite.Tests[1].SubTests[2].String(), "ok 3 - subtest3"; got != want {
 		t.Errorf("want %s\ngot %s", want, got)
 	}
 	if suite.Tests[2].SubTests != nil {
 		t.Errorf("want no subtests\ngot %v", suite.Tests[2].SubTests)
 	}
-
-	t.Log(suite.Tests[1].SubTests)
 }
 
 func BenchmarkParse(b *testing.B) {
