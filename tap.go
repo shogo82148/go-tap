@@ -56,7 +56,7 @@ type Testsuite struct {
 	Tests   []*Testline   // Description of all Testlines
 	Plan    int           // Number of tests intended to run (-1 means no plan)
 	Version int           // version number of TAP
-q	Time    time.Duration // Time it took to test
+	Time    time.Duration // Time it took to test
 }
 
 // Parses TAP
