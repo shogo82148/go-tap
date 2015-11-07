@@ -47,15 +47,16 @@ type Testline struct {
 	Diagnostic  string        // A more detailed diagnostic message about the failed test
 	Time        time.Duration // Time it took to test
 	Yaml        []byte        // The inline Yaml-document, if given
+	SubTests    []*Testline   // Sub-Tests
 }
 
 // The outcome of a Testsuite
 type Testsuite struct {
 	Ok      bool          // Whether the Testsuite as a whole succeded
 	Tests   []*Testline   // Description of all Testlines
-	plan    int           // Number of tests intended to run
-	version int           // version number of TAP
-	Time    time.Duration // Time it took to test
+	Plan    int           // Number of tests intended to run (-1 means no plan)
+	Version int           // version number of TAP
+q	Time    time.Duration // Time it took to test
 }
 
 // Parses TAP
@@ -81,18 +82,32 @@ func NewParser(r io.Reader) (*Parser, error) {
 		suite: Testsuite{
 			Ok:      true,
 			Tests:   []*Testline{},
-			plan:    0,
-			version: DefaultTAPVersion,
+			Plan:    -1,
+			Version: DefaultTAPVersion,
 		},
 	}, nil
 }
 
 func (p *Parser) Next() (*Testline, error) {
+	t, err := p.next("")
+	if t != nil {
+		p.suite.Tests = append(p.suite.Tests, t)
+	}
+	return t, err
+}
+
+func (p *Parser) next(indent string) (*Testline, error) {
 	t := &Testline{}
 	var err error
 
 	for {
 		line := p.scanner.Text()
+
+		// ignore indent
+		if !strings.HasPrefix(line, indent) {
+			return nil, nil
+		}
+		line = line[len(indent):]
 
 		// version
 		if strings.HasPrefix(line, "TAP version ") {
@@ -103,7 +118,7 @@ func (p *Parser) Next() (*Testline, error) {
 			if version != 13 {
 				return nil, ErrUnsupportedVersion
 			}
-			p.suite.version = version
+			p.suite.Version = version
 			if !p.scanner.Scan() {
 				return nil, io.EOF
 			}
@@ -121,7 +136,7 @@ func (p *Parser) Next() (*Testline, error) {
 			if err != nil {
 				return nil, err
 			}
-			p.suite.plan = plan
+			p.suite.Plan = plan
 			if !p.scanner.Scan() {
 				return nil, io.EOF
 			}
@@ -130,11 +145,17 @@ func (p *Parser) Next() (*Testline, error) {
 
 		// test
 		if strings.HasPrefix(line, "ok ") {
-			t, err = p.parseTestLine(true, line[len("ok "):])
+			t, err = p.parseTestLine(true, line[len("ok "):], indent)
 			break
 		}
 		if strings.HasPrefix(line, "not ok ") {
-			t, err = p.parseTestLine(false, line[len("not ok "):])
+			t, err = p.parseTestLine(false, line[len("not ok "):], indent)
+			break
+		}
+
+		// subtest
+		if strings.HasPrefix(line, "    # Subtest:") {
+			t, err = p.parseSubTestline(indent)
 			break
 		}
 
@@ -145,7 +166,6 @@ func (p *Parser) Next() (*Testline, error) {
 		}
 	}
 
-	p.suite.Tests = append(p.suite.Tests, t)
 	return t, err
 }
 
@@ -167,7 +187,7 @@ func (p *Parser) Suite() (*Testsuite, error) {
 		}
 	}
 
-	if len(p.suite.Tests) != p.suite.plan {
+	if p.suite.Plan < 0 || len(p.suite.Tests) != p.suite.Plan {
 		p.suite.Ok = false
 		return &p.suite, nil
 	}
@@ -175,7 +195,7 @@ func (p *Parser) Suite() (*Testsuite, error) {
 	return &p.suite, nil
 }
 
-func (p *Parser) parseTestLine(ok bool, line string) (*Testline, error) {
+func (p *Parser) parseTestLine(ok bool, line string, indent string) (*Testline, error) {
 	// calculate time it took to test
 	now := time.Now()
 	duration := now.Sub(p.lastExecTime)
@@ -239,7 +259,14 @@ func (p *Parser) parseTestLine(ok bool, line string) (*Testline, error) {
 		}
 
 		text := p.scanner.Text()
-		if p.suite.version == 13 && strings.TrimSpace(text) == "---" {
+
+		// ignore indent
+		if !strings.HasPrefix(line, indent) {
+			break
+		}
+		text = text[len(indent):]
+
+		if p.suite.Version == 13 && strings.TrimSpace(text) == "---" {
 			yaml = p.parseYAML()
 		}
 		if len(text) == 1 || text[0] != '#' {
@@ -258,6 +285,32 @@ func (p *Parser) parseTestLine(ok bool, line string) (*Testline, error) {
 		Time:        duration,
 		Yaml:        yaml,
 	}, nil
+}
+
+func (p *Parser) parseSubTestline(indent string) (*Testline, error) {
+	// skip '# Subtest: foobar' line
+	if !p.scanner.Scan() {
+		return nil, io.EOF
+	}
+
+	// parse subtests
+	subindent := indent + "    "
+	subtests := []*Testline{}
+	for {
+		subtest, err := p.next(subindent)
+		if subtest == nil {
+			break
+		}
+		subtests = append(subtests, subtest)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// parse result of subtests
+	t, err := p.next(indent)
+	t.SubTests = subtests
+	return t, err
 }
 
 func (p *Parser) parseYAML() []byte {
