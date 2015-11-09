@@ -154,10 +154,11 @@ func (p *Parser) next(indent string) (*Testline, error) {
 		}
 
 		// subtest
-		if strings.HasPrefix(line, "    # Subtest:") {
-			t, err = p.parseSubTestline(indent)
-			break
-		}
+		// this code doesn't work well... :(
+		// if strings.HasPrefix(line, "    # Subtest:") {
+		// 	t, err = p.parseSubTestline(indent)
+		// 	break
+		// }
 
 		// unknown line. skip it...
 
