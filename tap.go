@@ -154,11 +154,10 @@ func (p *Parser) next(indent string) (*Testline, error) {
 		}
 
 		// subtest
-		// this code doesn't work well... :(
-		// if strings.HasPrefix(line, "    # Subtest:") {
-		// 	t, err = p.parseSubTestline(indent)
-		// 	break
-		// }
+		if strings.HasPrefix(line, "    # Subtest:") {
+			t, err = p.parseSubTestline(indent)
+			break
+		}
 
 		// unknown line. skip it...
 
@@ -309,8 +308,16 @@ func (p *Parser) parseSubTestline(indent string) (*Testline, error) {
 	}
 
 	// parse result of subtests
+PARSE_TESTLINE:
 	t, err := p.next(indent)
-	t.SubTests = subtests
+	if t == nil && err == nil {
+		// invalid TAP format, ignore it
+		p.scanner.Scan()
+		goto PARSE_TESTLINE
+	}
+	if t != nil {
+		t.SubTests = subtests
+	}
 	return t, err
 }
 
