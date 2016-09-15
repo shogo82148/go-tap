@@ -183,6 +183,62 @@ ok 3 - foobar
 	}
 }
 
+func TestFindOrigDiagnostic(t *testing.T) {
+	r := strings.NewReader(`    # Subtest: hoge
+        # Subtest: fuga
+            # Subtest: piyo
+            not ok 1
+            #   Failed test at -e line 1.
+            #     Structures begin differing at:
+            #          $got->[1] = '2'
+            #     $expected->[1] = '3'
+            1..1
+            # Looks like you failed 1 test of 1.
+        not ok 1 - piyo
+        #   Failed test 'piyo'
+        #   at -e line 1.
+        1..1
+        # Looks like you failed 1 test of 1.
+    not ok 1 - fuga
+    #   Failed test 'fuga'
+    #   at -e line 1.
+    1..1
+    # Looks like you failed 1 test of 1.
+not ok 1 - hoge
+#   Failed test 'hoge'
+#   at -e line 1.
+1..1
+# Looks like you failed 1 test of 1.`)
+	p, err := NewParser(r)
+	if err != nil {
+		panic(err)
+	}
+
+	suite, err := p.Suite()
+	if err != nil {
+		panic(err)
+	}
+	if len(suite.Tests) != 1 {
+		t.Errorf("want 1\ngot %d", len(suite.Tests))
+	}
+
+	expect := `            #   Failed test at -e line 1.
+            #     Structures begin differing at:
+            #          $got->[1] = '2'
+            #     $expected->[1] = '3'
+        #   Failed test 'piyo'
+        #   at -e line 1.
+    #   Failed test 'fuga'
+    #   at -e line 1.
+#   Failed test 'hoge'
+#   at -e line 1.
+`
+
+	if got := suite.Tests[0].FindOrigDiagnostic(); got != expect {
+		t.Errorf("want %v\ngot %v", expect, got)
+	}
+}
+
 func BenchmarkParse(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		r := strings.NewReader(`1..3
