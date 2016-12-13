@@ -261,7 +261,7 @@ func (p *Parser) parseTestLine(ok bool, line string, indent string) (*Testline, 
 		text := p.scanner.Text()
 
 		// ignore indent
-		if !strings.HasPrefix(line, indent) {
+		if !strings.HasPrefix(text, indent) {
 			break
 		}
 		text = text[len(indent):]
