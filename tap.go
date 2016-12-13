@@ -39,15 +39,16 @@ func (d Directive) String() string {
 
 // A single TAP-Testline
 type Testline struct {
-	Ok          bool          // Whether the Testpoint executed ok
-	Num         int           // The number of the test
-	Description string        // A short description
-	Directive   Directive     // Whether the test was skipped or is a todo
-	Explanation string        // A short explanation why the test was skipped/is a todo
-	Diagnostic  string        // A more detailed diagnostic message about the failed test
-	Time        time.Duration // Time it took to test
-	Yaml        []byte        // The inline Yaml-document, if given
-	SubTests    []*Testline   // Sub-Tests
+	Ok             bool          // Whether the Testpoint executed ok
+	Num            int           // The number of the test
+	Description    string        // A short description
+	Directive      Directive     // Whether the test was skipped or is a todo
+	Explanation    string        // A short explanation why the test was skipped/is a todo
+	Diagnostic     string        // A more detailed diagnostic message about the failed test
+	OrigDiagnostic string        // A more detailed original diagnostic message about the failed test
+	Time           time.Duration // Time it took to test
+	Yaml           []byte        // The inline Yaml-document, if given
+	SubTests       []*Testline   // Sub-Tests
 }
 
 // The outcome of a Testsuite
@@ -242,23 +243,28 @@ func (p *Parser) parseTestLine(ok bool, line string, indent string) (*Testline, 
 	}
 
 	// parse diagnostics
-	diagnostics := []string{}
-	var yaml []byte
+	var (
+		diagnostics     = []string{}
+		origDiagnostics = []string{}
+		yaml            []byte
+	)
 	for {
 		if !p.scanner.Scan() {
 			return &Testline{
-				Ok:          ok,
-				Num:         num,
-				Description: description,
-				Directive:   directive,
-				Explanation: explanation,
-				Diagnostic:  strings.Join(diagnostics, ""),
-				Time:        duration,
-				Yaml:        yaml,
+				Ok:             ok,
+				Num:            num,
+				Description:    description,
+				Directive:      directive,
+				Explanation:    explanation,
+				Diagnostic:     strings.Join(diagnostics, ""),
+				OrigDiagnostic: strings.Join(origDiagnostics, ""),
+				Time:           duration,
+				Yaml:           yaml,
 			}, io.EOF
 		}
 
 		text := p.scanner.Text()
+		orig := text
 
 		// ignore indent
 		if !strings.HasPrefix(text, indent) {
@@ -273,17 +279,19 @@ func (p *Parser) parseTestLine(ok bool, line string, indent string) (*Testline, 
 			break
 		}
 		diagnostics = append(diagnostics, strings.TrimSpace(text[1:])+"\n")
+		origDiagnostics = append(origDiagnostics, orig+"\n")
 	}
 
 	return &Testline{
-		Ok:          ok,
-		Num:         num,
-		Description: description,
-		Directive:   directive,
-		Explanation: explanation,
-		Diagnostic:  strings.Join(diagnostics, ""),
-		Time:        duration,
-		Yaml:        yaml,
+		Ok:             ok,
+		Num:            num,
+		Description:    description,
+		Directive:      directive,
+		Explanation:    explanation,
+		Diagnostic:     strings.Join(diagnostics, ""),
+		OrigDiagnostic: strings.Join(origDiagnostics, ""),
+		Time:           duration,
+		Yaml:           yaml,
 	}, nil
 }
 
@@ -355,4 +363,20 @@ func (t *Testline) String() string {
 	}
 
 	return strings.Join(str, "")
+}
+
+func findOrigDiagnostic(t *Testline) []string {
+	ret := []string{}
+	for _, line := range t.SubTests {
+		if line.Ok {
+			continue
+		}
+		ret = append(ret, findOrigDiagnostic(line)...)
+		ret = append(ret, line.OrigDiagnostic)
+	}
+	return ret
+}
+
+func (t *Testline) FindOrigDiagnostic() string {
+	return strings.Join(append(findOrigDiagnostic(t), t.OrigDiagnostic), "")
 }
