@@ -54,8 +54,8 @@ ok 1 - YAML TEST
 		panic(err)
 	}
 
-	if string(suite.Tests[0].Yaml) != "    - foo\n    - bar\n" {
-		t.Errorf("want %s got %s", "    - foo\n    - bar\n", string(suite.Tests[0].Yaml))
+	if string(suite.Tests[0].YAML) != "    - foo\n    - bar\n" {
+		t.Errorf("want %s got %s", "    - foo\n    - bar\n", string(suite.Tests[0].YAML))
 	}
 }
 
