@@ -31,9 +31,9 @@ not ok 3 foobar # TODO not implemented yet`)
 	}
 
 	// Output:
-	// ok 1 hogehoge
-	// not ok 2 foobar
-	// not ok 3 foobar # TODO not implemented yet
+	// ok 1 - hogehoge
+	// not ok 2 - foobar
+	// not ok 3 - foobar # TODO not implemented yet
 }
 
 func TestYAML(t *testing.T) {

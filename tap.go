@@ -229,6 +229,9 @@ func (p *Parser) parseTestLine(ok bool, line string, indent string) (*Testline, 
 	// parse description & directive
 	description := ""
 	directiveStr := ""
+	if startDescription := strings.IndexRune(line[index:], '-'); startDescription >= 0 {
+		index += startDescription + 1
+	}
 	startDirective := strings.IndexRune(line[index:], '#')
 	if startDirective >= 0 {
 		startDirective += index
@@ -352,7 +355,7 @@ func (t *Testline) String() string {
 	str = append(str, strconv.FormatInt(int64(t.Num), 10))
 
 	if t.Description != "" {
-		str = append(str, " ", t.Description)
+		str = append(str, " - ", t.Description)
 	}
 
 	if t.Directive != None {
