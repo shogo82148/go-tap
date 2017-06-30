@@ -229,10 +229,10 @@ func (p *Parser) parseTestLine(ok bool, line string, indent string) (*Testline, 
 	// parse description & directive
 	description := ""
 	directiveStr := ""
-	if startDescription := strings.IndexByte(line[index:], '-'); startDescription >= 0 {
+	if startDescription := strings.IndexRune(line[index:], '-'); startDescription >= 0 {
 		index += startDescription + 1
 	}
-	startDirective := strings.IndexByte(line[index:], '#')
+	startDirective := strings.IndexRune(line[index:], '#')
 	if startDirective >= 0 {
 		startDirective += index
 		description = strings.TrimSpace(line[index:startDirective])
