@@ -36,6 +36,59 @@ not ok 3 foobar # TODO not implemented yet`)
 	// not ok 3 - foobar # TODO not implemented yet
 }
 
+func ExampleTestline_GoString() {
+	r := strings.NewReader(`TAP version 13
+ok 1 - foo
+    # Subtest: bar
+        # Subtest: subtest1
+        ok 1 - subsubtest1
+        ok 2 - subsubtest2 # TODO not implemented yet
+        # note message for subsubtest2
+        ok 3 - subsubtest3
+        1..3
+    ok 1 - subtest1
+    1..1
+ok 2 - bar
+ok 3 - foobar
+---
+- foo
+- bar
+...
+1..3
+`)
+	p, err := NewParser(r)
+	if err != nil {
+		panic(err)
+	}
+
+	suite, err := p.Suite()
+	if err != nil {
+		panic(err)
+	}
+
+	for _, t := range suite.Tests {
+		fmt.Printf("%#v", t)
+	}
+
+	// Output:
+	// ok 1 - foo
+	//     # Subtest: bar
+	//         # Subtest: subtest1
+	//         ok 1 - subsubtest1
+	//         ok 2 - subsubtest2 # TODO not implemented yet
+	//         # note message for subsubtest2
+	//         ok 3 - subsubtest3
+	//         1..3
+	//     ok 1 - subtest1
+	//     1..1
+	// ok 2 - bar
+	// ok 3 - foobar
+	// ---
+	// - foo
+	// - bar
+	// ...
+}
+
 func TestYAML(t *testing.T) {
 	r := strings.NewReader(`TAP version 13
 ok 1 - YAML TEST
