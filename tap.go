@@ -2,6 +2,7 @@ package tap
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
 	"io"
 	"strconv"
@@ -366,4 +367,56 @@ func (t *Testline) String() string {
 	}
 
 	return strings.Join(str, "")
+}
+
+// GoString returns the detail of the test result.
+func (t *Testline) GoString() string {
+	var buf bytes.Buffer
+	t.dump(&buf, "")
+	return buf.String()
+}
+
+func (t *Testline) dump(w io.Writer, indent string) error {
+	if len(t.SubTests) > 0 {
+		io.WriteString(w, indent)
+		io.WriteString(w, "    # Subtest:")
+		if t.Description != "" {
+			io.WriteString(w, " ")
+			io.WriteString(w, t.Description)
+		}
+		io.WriteString(w, "\n")
+		subindent := indent + "    "
+		for _, t := range t.SubTests {
+			t.dump(w, subindent)
+		}
+		io.WriteString(w, subindent)
+		io.WriteString(w, "1..")
+		io.WriteString(w, strconv.Itoa(len(t.SubTests)))
+		io.WriteString(w, "\n")
+	}
+	io.WriteString(w, indent)
+	io.WriteString(w, t.String())
+	io.WriteString(w, "\n")
+	if t.Diagnostic != "" {
+		diagnostics := strings.Split(t.Diagnostic, "\n")
+		for _, l := range diagnostics[:len(diagnostics)-1] {
+			io.WriteString(w, indent)
+			io.WriteString(w, "# ")
+			io.WriteString(w, l)
+			io.WriteString(w, "\n")
+		}
+	}
+	if len(t.YAML) > 0 {
+		io.WriteString(w, indent)
+		io.WriteString(w, "---\n")
+		yaml := strings.Split(string(t.YAML), "\n")
+		for _, l := range yaml[:len(yaml)-1] {
+			io.WriteString(w, indent)
+			io.WriteString(w, l)
+			io.WriteString(w, "\n")
+		}
+		io.WriteString(w, indent)
+		io.WriteString(w, "...\n")
+	}
+	return nil
 }
