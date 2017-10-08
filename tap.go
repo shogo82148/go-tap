@@ -162,7 +162,7 @@ func (p *Parser) next(indent string) (*Testline, error) {
 		}
 
 		// subtest
-		if strings.HasPrefix(line, "    # Subtest:") {
+		if strings.HasPrefix(line, "    # Subtest:") || strings.HasPrefix(line, "# Subtest:") {
 			t, err = p.parseSubTestline(indent)
 			break
 		}
@@ -281,7 +281,7 @@ func (p *Parser) parseTestLine(ok bool, line string, indent string) (*Testline, 
 		if p.suite.Version == 13 && strings.TrimSpace(text) == "---" {
 			yaml = p.parseYAML()
 		}
-		if len(text) == 1 || text[0] != '#' {
+		if len(text) == 1 || text[0] != '#' || strings.HasPrefix(text, "# Subtest:") {
 			break
 		}
 		diagnostics = append(diagnostics, strings.TrimSpace(text[1:])+"\n")
