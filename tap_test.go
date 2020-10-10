@@ -334,3 +334,24 @@ not ok 3 foobar # TODO not implemented yet`)
 		p.Suite()
 	}
 }
+
+func TestEmptyLine(t *testing.T) {
+	r := strings.NewReader(`1..2
+ok 1 - the following line is empty
+
+ok 2
+`)
+	p, err := NewParser(r)
+	if err != nil {
+		panic(err)
+	}
+
+	suite, err := p.Suite()
+	if err != nil {
+		panic(err)
+	}
+
+	if len(suite.Tests) != 2 {
+		t.Errorf("want 2\ngot %d", len(suite.Tests))
+	}
+}
