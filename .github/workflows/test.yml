@@ -10,33 +10,32 @@ jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
-        fail-fast: false
-        matrix:
-          go:
-            - "1.15.x"
-            - "1.14.x"
-            - "1.13.x"
-            - "1.12.x"
-            - "1.11.x"
-            - "1.10.x"
-            - "1.9.x"
-            - "1.8.x"
-            - "1.7.x"
-            - "1.6.x"
-            - "1.5.x"
-            - "1.4.x"
-            - "1.3.x"
-            - "1.2.x"
+      fail-fast: false
+      matrix:
+        go:
+          - "1.15.x"
+          - "1.14.x"
+          - "1.13.x"
+          - "1.12.x"
+          - "1.11.x"
+          - "1.10.x"
+          - "1.9.x"
+          - "1.8.x"
+          - "1.7.x"
+          - "1.6.x"
+          - "1.5.x"
+          - "1.4.x"
+          - "1.3.x"
+          - "1.2.x"
     env:
       GOPATH: ${{ github.workspace }}
       GO111MODULE: "on"
     steps:
-      - name: Set up Go
-        uses: actions/setup-go@v2
+      - uses: actions/setup-go@v2
         with:
           go-version: ${{ matrix.go }}
 
-      - name: actions/checkout@v2
+      - uses: actions/checkout@v2
         with:
           path: src/github.com/${{ github.repository }}
 
