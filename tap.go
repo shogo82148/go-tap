@@ -58,7 +58,7 @@ type Testline struct {
 
 // Testsuite is the outcome of a Testsuite
 type Testsuite struct {
-	Ok      bool          // Whether the Testsuite as a whole succeded
+	Ok      bool          // Whether the Testsuite as a whole succeeded
 	Tests   []*Testline   // Description of all Testlines
 	Plan    int           // Number of tests intended to run (-1 means no plan)
 	Version int           // version number of TAP
