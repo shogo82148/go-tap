@@ -284,7 +284,7 @@ func (p *Parser) parseTestLine(ok bool, line string, indent string) (*Testline, 
 		if len(text) <= 1 || text[0] != '#' || strings.HasPrefix(text, "# Subtest:") {
 			break
 		}
-		diagnostics = append(diagnostics, strings.TrimSpace(text[1:])+"\n")
+		diagnostics = append(diagnostics, text[1:]+"\n")
 	}
 
 	return &Testline{
@@ -401,7 +401,7 @@ func (t *Testline) dump(w io.Writer, indent string) error {
 		diagnostics := strings.Split(t.Diagnostic, "\n")
 		for _, l := range diagnostics[:len(diagnostics)-1] {
 			io.WriteString(w, indent)
-			io.WriteString(w, "# ")
+			io.WriteString(w, "#")
 			io.WriteString(w, l)
 			io.WriteString(w, "\n")
 		}
