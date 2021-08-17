@@ -1,6 +1,9 @@
 go-tap
 ====
 
+[![test](https://github.com/shogo82148/go-tap/actions/workflows/test.yml/badge.svg)](https://github.com/shogo82148/go-tap/actions/workflows/test.yml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/shogo82148/go-tap.svg)](https://pkg.go.dev/github.com/shogo82148/go-tap)
+
 TAP (Test Anything Protocol) parser in golang.
 
 ``` go
@@ -32,5 +35,3 @@ not ok 3 foobar # TODO not implemented yet`)
 	// not ok 3 foobar # TODO not implemented yet
 }
 ```
-
-see [godoc](https://godoc.org/github.com/shogo82148/go-tap) for more detail.
