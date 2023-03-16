@@ -31,7 +31,7 @@ jobs:
       GOPATH: ${{ github.workspace }}
       GO111MODULE: "on"
     steps:
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
           go-version: ${{ matrix.go }}
 
